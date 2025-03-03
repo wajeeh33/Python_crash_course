@@ -25,9 +25,9 @@ url = os.getenv("DATABASE_URL")
 
 conn = psycopg2.connect(url)
 with conn:
-    with conn.cursor() as cursor:
-        cursor.execute(CREATE_ROOMS_TABLE)
-        cursor.execute(CREATE_TEMPS_TABLE)
+    with conn.cursor() as cur:
+        cur.execute(CREATE_ROOMS_TABLE)
+        cur.execute(CREATE_TEMPS_TABLE)
 
 
 @app.post("/api/room")
@@ -36,9 +36,10 @@ def create_room():
     name = data["name"]
 
     with conn:
-        with conn.cursor() as cursor:
-            cursor.execute(INSERT_ROOM_RETURN_ID, (name,))
-            room_id = cursor.fetchone()[0]
+        with conn.cursor() as cur:
+            cur.execute(INSERT_ROOM_RETURN_ID, (name,))
+            room_id = cur.fetchone()[0]
+            conn.commit()
 
     return {"id": room_id, "message": f"Room {name} created."}, 201
 
@@ -55,21 +56,22 @@ def add_temp():
         date = datetime.now(timezone.utc)
 
     with conn:
-        with conn.cursor() as cursor:
-            cursor.execute(CREATE_TEMPS_TABLE)
-            cursor.execute(INSERT_TEMP, (room_id, temperature, date))
-
+        with conn.cursor() as cur:
+            cur.execute(CREATE_TEMPS_TABLE)
+            cur.execute(INSERT_TEMP, (room_id, temperature, date))
+            conn.commit()
     return {"message": "Temperature added."}, 201
 
 
 @app.get("/api/average")
 def get_global_avg():
     with conn:
-        with conn.cursor() as cursor:
-            cursor.execute(GLOBAL_AVG)
-            average = cursor.fetchone()[0]
-            cursor.execute(GLOBAL_NUMBER_OF_ROOMS)
-            days = cursor.fetchone()[0]
+        with conn.cursor() as cur:
+            cur.execute(GLOBAL_AVG)g
+            average = cur.fetchone()[0]
+            cur.execute(GLOBAL_NUMBER_OF_ROOMS)
+            days = cur.fetchone()[0]
+            conn.commit()
 
     return {"average": round(average, 2), "days": days}
 
@@ -77,9 +79,10 @@ def get_global_avg():
 @app.get("/api/rooms")
 def get_rooms():
     with conn:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM rooms")
-            rooms = cursor.fetchall()
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM rooms")
+            rooms = cur.fetchall()
+            conn.commit()
 
     return {"rooms": rooms, "message": "Rooms fetched."}
 
